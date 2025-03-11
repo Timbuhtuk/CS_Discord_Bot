@@ -17,7 +17,7 @@ namespace CS_Discord_Bot.Commands
         public async Task Reboot()
         {
             await Context.Message.DeleteAsync();
-            if(Context.User.Id == 509028138227859467)
+            if(Context.User.Id == 509028138227859468)
                 Program.RestartApplication();
         }
         
@@ -26,7 +26,7 @@ namespace CS_Discord_Bot.Commands
         public async Task Execute(params string[] values)
         {
             string query = Context.Message.Content.Replace(Program.app_config["command_tag"]!+"execute " ,"");
-            if(Context.User.Id == 509028138227859467)
+            if(Context.User.Id == 509028138227859468)
             {
                 try { 
                     Process process = Process.Start(query);
