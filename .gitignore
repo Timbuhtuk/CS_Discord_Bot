@@ -366,3 +366,4 @@ FodyWeavers.xsd
 *.exe
 configuration.json
 youtubeCookies.txt
+/music
