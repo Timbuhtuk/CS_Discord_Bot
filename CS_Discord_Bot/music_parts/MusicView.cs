@@ -32,15 +32,14 @@ public class MusicView
                 songs_list_items.Add(new SelectMenuOptionBuilder(song.Name, song.Id.ToString()));
             }
         }
-        if(current_playlist.Name != "history")
+        if(current_playlist.Id != -1 || current_playlist.Id != -2)
             songs_list_items.Add(new SelectMenuOptionBuilder("delete list", "delete list"));
 
 
         var playlists_list_items = new List<SelectMenuOptionBuilder>();
-        foreach (var playlist in _music_client.saved_music!)
+        for(int q = _music_client.saved_music!.Count -1;q>=0 ;q--)
         {
-            if(!string.IsNullOrEmpty(playlist.Name))
-                playlists_list_items.Add(new SelectMenuOptionBuilder(playlist.Name, playlist.Id.ToString()));
+                playlists_list_items.Add(new SelectMenuOptionBuilder(_music_client.saved_music![q].Name, _music_client.saved_music![q].Id.ToString()));
         }
 
 
@@ -146,7 +145,7 @@ public class MusicView
                 bool toggle_result = await _music_client.ToggleMusicLikeAsync(current_playlist.Id);
                 if(!toggle_result)
                 {
-                    await component.FollowupAsync(embed:new EmbedBuilder().WithDescription("limit of saved music is 25 tracks").WithColor(Color.Orange).Build(),ephemeral:true);
+                    await component.FollowupAsync(embed:new EmbedBuilder().WithDescription("limit of saved music is 23 tracks").WithColor(Color.Orange).Build(),ephemeral:true);
                 }
                 else {
                     await _music_client.UpdateLikedMusicAsync();

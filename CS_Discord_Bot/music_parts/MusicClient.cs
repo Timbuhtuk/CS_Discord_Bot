@@ -20,7 +20,8 @@ namespace CS_Discord_Bot
 
         private Guild guild;
         private readonly IDbContextFactory<DiscordMusicDBContext> _db_context_factory;
-        public Models.Playlist playback_history { get; protected set; } = new Models.Playlist() { Name = "history", Id = -1 };
+        public Models.Playlist playback_history { get; protected set; } = new Models.Playlist() { Name = "History", Id = -1 , AuthorId = 0 };
+        public Models.Playlist popular_songs { get; protected set; } = new Models.Playlist() { Name = "Popular", Id = -2 , AuthorId = 0 };
         public List<Models.Playlist>? saved_music { get; protected set; }
         public KeyValuePair<IVoiceChannel, Song>? current_song { get; protected set; }
         public IVoiceChannel? current_voice_channel { get; protected set; }
@@ -63,6 +64,7 @@ namespace CS_Discord_Bot
         protected async void AfterConstruct(Object o)
         {
             await UpdateLikedMusicAsync();
+            await UpdatePopularSongsAsync();
             await RerenderMusicViewAsync();
         }
         
@@ -207,11 +209,20 @@ namespace CS_Discord_Bot
                         while (is_paused)
                         {
                             await Task.Delay(100);
-                            
                         }
                         await output.WriteAsync(buffer, 0, bytesRead);
                         if (cancellationToken.IsCancellationRequested)
                             break;
+                    }
+                    //add view to song;
+                    if (!cancellationToken.IsCancellationRequested)
+                    { 
+                        var context = _db_context_factory.CreateDbContext();
+                        Song current = context.Find<Song>(current_song.Value.Value.Id)!;
+                        current.Views++;
+                        context.SaveChanges();
+                        context.Dispose();
+                        await UpdatePopularSongsAsync();
                     }
                 }
                 catch (OperationCanceledException ex) {
@@ -579,8 +590,17 @@ namespace CS_Discord_Bot
             await Logs.AddLog($"AddPlaylistAsync called, playlist name: {playlist_name}");
             using LogScope log_scope = new LogScope();
 
-            if (playlist_name == null || author_id == null)
+            if(guild.Playlists.Count == 23)
+            {
+                await Logs.AddLog("Playlist not added - guild lists count overflow", LogLevel.WARNING);
                 return false;
+            }
+
+            if (playlist_name == null || author_id == null)
+            {
+                await Logs.AddLog("Playlist or author Id == null", LogLevel.WARNING);
+                return false; 
+            }
 
             using var _context = await _db_context_factory.CreateDbContextAsync();
 
@@ -588,8 +608,10 @@ namespace CS_Discord_Bot
             bool playlistExists = guild.Playlists.Select(p => p.Name).Any(name => name == playlist_name);
 
             if (playlistExists)
+            {
+                await Logs.AddLog("Playlist already exist", LogLevel.WARNING);
                 return false;
-
+            }
             Models.Playlist playlist_entity;
 
             var found_songs = await VideoFinder.FindPlaylistByLink(playlist_name, true);
@@ -642,7 +664,13 @@ namespace CS_Discord_Bot
             await UpdateMusicViewAsync();
             return true;
         }
+        public async Task UpdatePopularSongsAsync() {
 
+            popular_songs.Songs.Clear();
+            var context = _db_context_factory.CreateDbContext();
+            List<Song> songs = context.Songs.OrderByDescending(s => s.Views).Take(23).ToList();
+            popular_songs.Songs = songs;
+        }
         public async Task<bool> RemovePlaylistAsync(int playlist_id)
         {
             await Logs.AddLog($"RemovePlaylistAsync called, playlist id: {playlist_id}");
@@ -661,16 +689,19 @@ namespace CS_Discord_Bot
         }
         public async Task UpdateLikedMusicAsync() {
 
-            using var _context = await _db_context_factory.CreateDbContextAsync();
+            using var context = await _db_context_factory.CreateDbContextAsync();
 
-            var playlists = await _context.Guilds
-         .Where(g => g.Id == guild.Id)
-         .SelectMany(g => g.Playlists)
-         .Include(p => p.Songs) 
-         .ToListAsync();
+            var playlists = await context.Guilds
+             .Where(g => g.Id == guild.Id)
+             .SelectMany(g => g.Playlists)
+             .Include(p => p.Songs) 
+             .ToListAsync();
+
+            guild = context.Guilds.Include(g => g.Playlists).First(g => g.Id == guild.Id);
 
             saved_music = playlists;
             saved_music.Add(playback_history);
+            saved_music.Add(popular_songs);
             await Logs.AddLog("Saved music updated");
         }
         public async Task ToggleRepeatAsync()

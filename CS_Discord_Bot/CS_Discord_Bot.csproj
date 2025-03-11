@@ -48,10 +48,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GPT3_Interactor\GPT3_Interactor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <None Update="appdata\configuration.json.example">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="appdata\configuration.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

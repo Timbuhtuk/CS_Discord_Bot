@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using GPT3_Interactor;
 using System;
 using System.Collections.Generic;
 using System.Linq;

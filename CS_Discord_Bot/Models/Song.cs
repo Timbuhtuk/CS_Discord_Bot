@@ -17,5 +17,7 @@ public partial class Song
 
     public string? FilePath { get; set; }
 
+    public int Views { get; set; } = 0;
+
     public virtual ICollection<Playlist> Playlists { get; set; } = new List<Playlist>();
 }

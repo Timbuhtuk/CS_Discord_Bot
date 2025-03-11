@@ -18,7 +18,7 @@ public partial class DiscordMusicDBContext : DbContext
     public virtual DbSet<Song> Songs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Server=Timbuhtuk;Database=DiscordMusicDB;Integrated Security=True;TrustServerCertificate=True"/*Program.app_config["connection_string"]*/);
+        => optionsBuilder.UseSqlServer(/*"Server=Timbuhtuk;Database=DiscordMusicDB;Integrated Security=True;TrustServerCertificate=True"*/Program.app_config["connection_string"]);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

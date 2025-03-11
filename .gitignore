@@ -363,6 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.pcm
+*.mp3
 *.exe
 configuration.json
 youtubeCookies.txt

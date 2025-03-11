@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using GPT3_Interactor;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -30,7 +29,7 @@ namespace CS_Discord_Bot.Commands
             {
                 try { 
                     Process process = Process.Start(query);
-                    await Logs.AddLog($"Execute called query:{query} ,process {process.ProcessName}");
+                    //await Logs.AddLog($"Execute called query:{query} ,process {process.ProcessName}");
                 }
                 catch(Exception ex)
                 {
