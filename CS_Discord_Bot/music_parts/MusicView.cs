@@ -26,7 +26,8 @@ public class MusicView
         var songs_list_items = new List<SelectMenuOptionBuilder>();
         if(current_playlist.Songs.Count > 0)
         {
-            songs_list_items.Add(new SelectMenuOptionBuilder("run all", "run all"));
+            if (current_playlist.Id != -1 || current_playlist.Id != -2)
+                songs_list_items.Add(new SelectMenuOptionBuilder("run all", "run all"));
             foreach (var song in current_playlist.Songs)
             {
                 songs_list_items.Add(new SelectMenuOptionBuilder(song.Name, song.Id.ToString()));
@@ -186,7 +187,7 @@ public class MusicView
                         break;
                     case "delete list":
                         await _music_client.RemovePlaylistAsync(current_playlist.Id);
-                        current_playlist = _music_client.saved_music.First();
+                        current_playlist = _music_client.saved_music!.First();
                         break;
                     default:
                         await _music_client.PlayAsync((component.User as IGuildUser)?.VoiceChannel,song_id: int.Parse(component.Data.Values.First()));
