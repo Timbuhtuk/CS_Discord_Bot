@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
+﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CS_Discord_Bot
 {
     public struct FfmpegInteractor
     {
-        public static async Task<string?> ConvertMp3ToPcm(string file_path,string? output_file_path = null)
+        public static async Task<string?> ConvertMp3ToPcm(string file_path, string? output_file_path = null)
         {
-            if(!Regex.Match(file_path, @"^[A-Z]:(?:\\{1,2}[^\\/:*?\""<>|]+)*\.mp3$").Success)
+            if (!Regex.Match(file_path, @"^[A-Z]:(?:\\{1,2}[^\\/:*?\""<>|]+)*\.mp3$").Success)
                 return null;
             if (!File.Exists(file_path))
             {
@@ -47,7 +42,7 @@ namespace CS_Discord_Bot
             ffmpegProcess.ErrorDataReceived += (sender, e) =>
             {
                 //if (!string.IsNullOrEmpty(e.Data))
-                    //Logs.AddLog($"FFMPEG Error: {e.Data}").Wait();
+                //Logs.AddLog($"FFMPEG Error: {e.Data}").Wait();
             };
 
             if (!ffmpegProcess.Start())
@@ -62,7 +57,7 @@ namespace CS_Discord_Bot
 
             if (ffmpegProcess.ExitCode != 0)
             {
-                await Logs.AddLog($"FFmpeg conversion failed with exit code {ffmpegProcess.ExitCode}",LogLevel.ERROR);
+                await Logs.AddLog($"FFmpeg conversion failed with exit code {ffmpegProcess.ExitCode}", LogLevel.ERROR);
             }
 
             await Logs.AddLog("FFMPEG - conversion completed");

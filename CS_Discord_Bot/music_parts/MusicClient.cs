@@ -1,27 +1,26 @@
-﻿using Discord.Audio;
+﻿using CS_Discord_Bot.Models;
 using Discord;
+using Discord.Audio;
 using Discord.Commands;
 using Discord.WebSocket;
-using System.Collections.Concurrent;
-using System.Text;
-using CS_Discord_Bot.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using System.Diagnostics;
-
+using System.Text;
 
 
 namespace CS_Discord_Bot
 {
-    
+
     public class MusicClient : IAsyncDisposable
     {
-        
+
         #region fields
 
         private Guild guild;
         private readonly IDbContextFactory<DiscordMusicDBContext> _db_context_factory;
-        public Models.Playlist playback_history { get; protected set; } = new Models.Playlist() { Name = "History", Id = -1 , AuthorId = 0 };
-        public Models.Playlist popular_songs { get; protected set; } = new Models.Playlist() { Name = "Popular", Id = -2 , AuthorId = 0 };
+        public Models.Playlist playback_history { get; protected set; } = new Models.Playlist() { Name = "History", Id = -1, AuthorId = 0 };
+        public Models.Playlist popular_songs { get; protected set; } = new Models.Playlist() { Name = "Popular", Id = -2, AuthorId = 0 };
         public List<Models.Playlist>? saved_music { get; protected set; }
         public KeyValuePair<IVoiceChannel, Song>? current_song { get; protected set; }
         public IVoiceChannel? current_voice_channel { get; protected set; }
@@ -45,8 +44,8 @@ namespace CS_Discord_Bot
         protected static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         #endregion
 
-        public MusicClient(Guild guild,IDbContextFactory<DiscordMusicDBContext> factory)
-        { 
+        public MusicClient(Guild guild, IDbContextFactory<DiscordMusicDBContext> factory)
+        {
             music_queue = new ConcurrentQueue<KeyValuePair<IVoiceChannel, Song>>();
             saved_music = new List<Models.Playlist>() { playback_history };
             music_view = new MusicView(this);
@@ -67,7 +66,7 @@ namespace CS_Discord_Bot
             await UpdatePopularSongsAsync();
             await RerenderMusicViewAsync();
         }
-        
+
         public async Task ClearAsync(ICommandContext context)
         {
             using LogScope log_scope = new LogScope("ClearAsync called");
@@ -214,7 +213,7 @@ namespace CS_Discord_Bot
                     }
                     //add view to song;
                     if (!cancellationToken.IsCancellationRequested)
-                    { 
+                    {
                         var context = _db_context_factory.CreateDbContext();
                         Song current = context.Find<Song>(current_song.Value.Value.Id)!;
                         current.Views++;
@@ -223,7 +222,8 @@ namespace CS_Discord_Bot
                         await UpdatePopularSongsAsync();
                     }
                 }
-                catch (OperationCanceledException ex) {
+                catch (OperationCanceledException ex)
+                {
                     Console.WriteLine($"CanceledException during playback, : {ex.Message}");
                 }
                 catch (Exception ex)
@@ -268,7 +268,8 @@ namespace CS_Discord_Bot
             }
 
             using var _context = _db_context_factory.CreateDbContext();
-            if (song_id != null) {
+            if (song_id != null)
+            {
                 var song = _context.Find<Song>(song_id);
                 if (song == null)
                     return;
@@ -277,11 +278,12 @@ namespace CS_Discord_Bot
 
                 music_queue.Enqueue(temp);
             }
-            if (playlist_id != null) {
+            if (playlist_id != null)
+            {
                 var playlist = _context.Playlists.Include(p => p.Songs).FirstOrDefault(p => p.Id == playlist_id);
                 if (playlist == null)
                     return;
-                foreach(Song s in playlist.Songs)
+                foreach (Song s in playlist.Songs)
                 {
                     var temp = new KeyValuePair<IVoiceChannel, Song>(voiceChannel, s);
                     music_queue.Enqueue(temp);
@@ -312,59 +314,61 @@ namespace CS_Discord_Bot
             var songs_db_instances = new List<Song>();
 
 
-             
+
             var song = _context.Songs.Where(s => s.Name == query || s.Link == query).FirstOrDefault();
-            var playlist = _context.Playlists.Include(p=>p.Songs).Where(p => p.Name == query).FirstOrDefault();
-                if (song != null)
+            var playlist = _context.Playlists.Include(p => p.Songs).Where(p => p.Name == query).FirstOrDefault();
+            if (song != null)
+            {
+                songs = new List<Song>() { song };
+                await Logs.AddLog("used saved track instead downloading");
+            }
+            else if (playlist != null)
+            {
+                songs = new List<Song>();
+                foreach (var s in playlist.Songs)
                 {
-                    songs = new List<Song>() { song };
-                    await Logs.AddLog("used saved track instead downloading");
+                    songs.Add(s);
                 }
-                else if (playlist != null) {
-                    songs = new List<Song>();
-                    foreach(var s in playlist.Songs)
+            }
+            else
+            {
+                var songs_info = await VideoFinder.Find(query, true);
+                if (songs_info == null)
+                {
+                    if (textChannel != null)
                     {
-                        songs.Add(s);
+                        await textChannel.SendMessageAsync(embed: new EmbedBuilder()
+                            .WithDescription("q cant find that trash, мой маленький гой")
+                            .WithColor(Color.Orange)
+                            .Build()
+                        );
                     }
+                    Logs.depth -= 1;
+                    return;
+                };
+
+                songs = await AudioDownloader.Download(songs_info, Program.app_config["music_client:music_folder"]);
+
+            }
+            foreach (var s in songs)
+            {
+                var inst = _context.Songs.FirstOrDefault(S => s.Name == S.Name && s.AuthorName == S.AuthorName);
+                if (inst == null)
+                {
+                    songs_db_instances.Add(_context.Songs.Add(s).Entity);
                 }
                 else
                 {
-                    var songs_info = await VideoFinder.Find(query, true);
-                    if (songs_info == null)
-                    {
-                        if (textChannel != null)
-                        {
-                            await textChannel.SendMessageAsync(embed: new EmbedBuilder()
-                                .WithDescription("q cant find that trash, мой маленький гой")
-                                .WithColor(Color.Orange)
-                                .Build()
-                            );
-                        }
-                    Logs.depth -= 1;
-                    return;
-                    };
-                    
-                    songs = await AudioDownloader.Download(songs_info, Program.app_config["music_client:music_folder"]);
-                
+                    songs_db_instances.Add(inst);
+
                 }
-                    foreach (var s in songs)
-                    {  
-                        var inst = _context.Songs.FirstOrDefault(S => s.Name == S.Name && s.AuthorName == S.AuthorName);      
-                        if (inst == null)
-                        { 
-                            songs_db_instances.Add(_context.Songs.Add(s).Entity); 
-                        }  
-                        else {
-                            songs_db_instances.Add(inst); 
-                            
-                        }
-                    
-                    }
-                     
-                    _context.SaveChanges();
-                
-                
-            
+
+            }
+
+            _context.SaveChanges();
+
+
+
 
 
             foreach (var s in songs_db_instances)
@@ -487,7 +491,7 @@ namespace CS_Discord_Bot
 
             await _semaphoreSlim.WaitAsync();
             await Logs.AddLog("View update called");
-           
+
 
             Discord.Embed? embed = null;
             if (music_queue.Count > 0 || current_song != null)
@@ -506,9 +510,9 @@ namespace CS_Discord_Bot
                 if (view_message == null)
                     return false;
                 await (view_message as IUserMessage)!.ModifyAsync(msg => { msg.Components = component; msg.Embed = embed; msg.Content = ""; });
-                
+
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 using LogScope log_scope = new LogScope();
                 await Logs.AddLog("View update failure", LogLevel.WARNING);
@@ -519,7 +523,8 @@ namespace CS_Discord_Bot
             }
             return true;
         }
-        public async Task SetViewMessage(SocketMessage? msg) {
+        public async Task SetViewMessage(SocketMessage? msg)
+        {
             view_message = msg;
         }
         public async Task SetAnchorAsync(ICommandContext context)
@@ -542,14 +547,14 @@ namespace CS_Discord_Bot
             {
                 playback_history.Songs.Add(song);
             };
-            while(playback_history.Songs.Count > history_limit)
+            while (playback_history.Songs.Count > history_limit)
             {
                 playback_history.Songs.Remove(playback_history.Songs.Last());
             }
             await Logs.AddLog("Playback updated");
         }
-        
-        public async Task<bool> ToggleMusicLikeAsync(int? playlistId,int? songId = null)
+
+        public async Task<bool> ToggleMusicLikeAsync(int? playlistId, int? songId = null)
         {
             songId = current_song?.Value.Id;
 
@@ -563,24 +568,24 @@ namespace CS_Discord_Bot
             if (playlist == null || song == null)
                 return false;
 
-                if (playlist.Songs.Contains(song))
-                {
-                    playlist.Songs.Remove(song);
-                    await Logs.AddLog($"{song.Name} removed from favorite on guild {guild.DiscordId}");
-                }
-                else if (playlist.Songs.Count==23)//limit 25, -2 reserved options in every selector
-                {
-                    await Logs.AddLog($"{song.Name} did not add to favorite on guild {guild.DiscordId} to much favorite");
-                    return false;
-                }                
-                else
-                {
-                  playlist.Songs.Add(song);
-                  await Logs.AddLog($"{song.Name} added to favorite on guild {guild.DiscordId}");
-                }
-            
+            if (playlist.Songs.Contains(song))
+            {
+                playlist.Songs.Remove(song);
+                await Logs.AddLog($"{song.Name} removed from favorite on guild {guild.DiscordId}");
+            }
+            else if (playlist.Songs.Count == 23)//limit 25, -2 reserved options in every selector
+            {
+                await Logs.AddLog($"{song.Name} did not add to favorite on guild {guild.DiscordId} to much favorite");
+                return false;
+            }
+            else
+            {
+                playlist.Songs.Add(song);
+                await Logs.AddLog($"{song.Name} added to favorite on guild {guild.DiscordId}");
+            }
+
             _context.SaveChanges();
-            
+
             return true;
         }
         public async Task<bool> AddPlaylistAsync(string? playlist_name, ulong? author_id)
@@ -588,7 +593,7 @@ namespace CS_Discord_Bot
             await Logs.AddLog($"AddPlaylistAsync called, playlist name: {playlist_name}");
             using LogScope log_scope = new LogScope();
 
-            if(guild.Playlists.Count == 23)
+            if (guild.Playlists.Count == 23)
             {
                 await Logs.AddLog("Playlist not added - guild lists count overflow", LogLevel.WARNING);
                 return false;
@@ -597,7 +602,7 @@ namespace CS_Discord_Bot
             if (playlist_name == null || author_id == null)
             {
                 await Logs.AddLog("Playlist or author Id == null", LogLevel.WARNING);
-                return false; 
+                return false;
             }
 
             using var _context = await _db_context_factory.CreateDbContextAsync();
@@ -662,7 +667,8 @@ namespace CS_Discord_Bot
             await UpdateMusicViewAsync();
             return true;
         }
-        public async Task UpdatePopularSongsAsync() {
+        public async Task UpdatePopularSongsAsync()
+        {
 
             popular_songs.Songs.Clear();
             var context = _db_context_factory.CreateDbContext();
@@ -685,14 +691,15 @@ namespace CS_Discord_Bot
             await UpdateLikedMusicAsync();
             return true;
         }
-        public async Task UpdateLikedMusicAsync() {
+        public async Task UpdateLikedMusicAsync()
+        {
 
             using var context = await _db_context_factory.CreateDbContextAsync();
 
             var playlists = await context.Guilds
              .Where(g => g.Id == guild.Id)
              .SelectMany(g => g.Playlists)
-             .Include(p => p.Songs) 
+             .Include(p => p.Songs)
              .ToListAsync();
 
             guild = context.Guilds.Include(g => g.Playlists).First(g => g.Id == guild.Id);
@@ -748,12 +755,12 @@ namespace CS_Discord_Bot
 
         public async ValueTask DisposeAsync()
         {
-            if(ffmpeg!=null)
+            if (ffmpeg != null)
                 ffmpeg.Dispose();
-            if(audio_client!=null)
+            if (audio_client != null)
                 audio_client.Dispose();
-            if ( view_message != null)
-                await  view_message.DeleteAsync();
+            if (view_message != null)
+                await view_message.DeleteAsync();
             return;
         }
     }

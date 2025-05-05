@@ -1,7 +1,7 @@
 ﻿using CS_Discord_Bot;
+using CS_Discord_Bot.Models;
 using Discord;
 using Discord.WebSocket;
-using CS_Discord_Bot.Models;
 
 /// <summary>
 /// Class represents discord component creator for bot music player
@@ -24,7 +24,7 @@ public class MusicView
 
 
         var songs_list_items = new List<SelectMenuOptionBuilder>();
-        if(current_playlist.Songs.Count > 0)
+        if (current_playlist.Songs.Count > 0)
         {
             if (current_playlist.Id != -1 || current_playlist.Id != -2)
                 songs_list_items.Add(new SelectMenuOptionBuilder("run all", "run all"));
@@ -33,14 +33,14 @@ public class MusicView
                 songs_list_items.Add(new SelectMenuOptionBuilder(song.Name, song.Id.ToString()));
             }
         }
-        if(current_playlist.Id != -1 || current_playlist.Id != -2)
+        if (current_playlist.Id != -1 || current_playlist.Id != -2)
             songs_list_items.Add(new SelectMenuOptionBuilder("delete list", "delete list"));
 
 
         var playlists_list_items = new List<SelectMenuOptionBuilder>();
-        for(int q = _music_client.saved_music!.Count -1;q>=0 ;q--)
+        for (int q = _music_client.saved_music!.Count - 1; q >= 0; q--)
         {
-                playlists_list_items.Add(new SelectMenuOptionBuilder(_music_client.saved_music![q].Name, _music_client.saved_music![q].Id.ToString()));
+            playlists_list_items.Add(new SelectMenuOptionBuilder(_music_client.saved_music![q].Name, _music_client.saved_music![q].Id.ToString()));
         }
 
 
@@ -49,7 +49,7 @@ public class MusicView
         builder.WithButton(GetPauseUnpauseLabel(), "PAUSE_UNPAUSE", GetPauseUnpauseStyle());
         builder.WithButton("▶▶|", "FORWARD", GetForwardButtonStyle());
         builder.WithButton(GetRepeatButtonLabel(), "REPEAT", GetRepeatButtonStyle());
-        builder.WithButton(GetAddPlaylistlabel(),"ADDPLAYLIST",GetAddPlaylistStyle());
+        builder.WithButton(GetAddPlaylistlabel(), "ADDPLAYLIST", GetAddPlaylistStyle());
 
 
 
@@ -57,15 +57,15 @@ public class MusicView
         if (playlists_list_items.Count > 0)
             builder.WithSelectMenu("PLAYLIST_MENU", playlists_list_items, row: 1, placeholder: current_playlist.Name);
 
-        if(songs_list_items.Count>0)
+        if (songs_list_items.Count > 0)
             builder.WithSelectMenu("SONGS_MENU", songs_list_items, row: 2, placeholder: "playlist content");
-        
+
 
         return builder.Build();
 
     }
 
-    
+
 
     protected string GetAddPlaylistlabel()
     {
@@ -77,13 +77,13 @@ public class MusicView
     }
     protected string GetLikeButtonLabel()
     {
-        if( _music_client.current_song == null || !_music_client.current_song.HasValue)
+        if (_music_client.current_song == null || !_music_client.current_song.HasValue)
         {
             return "X";
         }
 
         Song song = _music_client.current_song.Value.Value;
-        if (!current_playlist.Songs.Select(s=> s.Id).Contains(song.Id))
+        if (!current_playlist.Songs.Select(s => s.Id).Contains(song.Id))
         {
             return "💚";
         }
@@ -144,22 +144,23 @@ public class MusicView
             case "LIKE":
                 await component.DeferAsync();
                 bool toggle_result = await _music_client.ToggleMusicLikeAsync(current_playlist.Id);
-                if(!toggle_result)
+                if (!toggle_result)
                 {
-                    await component.FollowupAsync(embed:new EmbedBuilder().WithDescription("limit of saved music is 23 tracks").WithColor(Color.Orange).Build(),ephemeral:true);
+                    await component.FollowupAsync(embed: new EmbedBuilder().WithDescription("limit of saved music is 23 tracks").WithColor(Color.Orange).Build(), ephemeral: true);
                 }
-                else {
+                else
+                {
                     await _music_client.UpdateLikedMusicAsync();
                     current_playlist = _music_client.saved_music.Where(p => p.Id == current_playlist.Id).First();
                 }
-                
-   
+
+
                 break;
             case "ADDPLAYLIST":
                 var mb = new ModalBuilder()
                 .WithTitle("Add playlist")
                 .WithCustomId("ADDPLAYLISTMODAL")
-                .AddTextInput(label:"Enter name for playlist or Url to playlist:", customId:"playlist_name", placeholder: "playlist name or url")
+                .AddTextInput(label: "Enter name for playlist or Url to playlist:", customId: "playlist_name", placeholder: "playlist name or url")
                 .Build();
                 await component.RespondWithModalAsync(mb);
                 break;
@@ -183,21 +184,21 @@ public class MusicView
                 switch (component.Data.Values.First())
                 {
                     case "run all":
-                        await _music_client.PlayAsync((component.User as IGuildUser)?.VoiceChannel,playlist_id: current_playlist.Id);
+                        await _music_client.PlayAsync((component.User as IGuildUser)?.VoiceChannel, playlist_id: current_playlist.Id);
                         break;
                     case "delete list":
                         await _music_client.RemovePlaylistAsync(current_playlist.Id);
                         current_playlist = _music_client.saved_music!.First();
                         break;
                     default:
-                        await _music_client.PlayAsync((component.User as IGuildUser)?.VoiceChannel,song_id: int.Parse(component.Data.Values.First()));
+                        await _music_client.PlayAsync((component.User as IGuildUser)?.VoiceChannel, song_id: int.Parse(component.Data.Values.First()));
                         break;
                 }
                 await _music_client.UpdateMusicViewAsync();
                 break;
             case "PLAYLIST_MENU":
                 await component.DeferAsync();
-                current_playlist = _music_client.saved_music.Where(p=>p.Id == int.Parse(component.Data.Values.First())).First();
+                current_playlist = _music_client.saved_music.Where(p => p.Id == int.Parse(component.Data.Values.First())).First();
 
                 break;
         }

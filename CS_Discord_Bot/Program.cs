@@ -1,16 +1,14 @@
-﻿using Discord;
+﻿using CS_Discord_Bot.Commands;
+using CS_Discord_Bot.Factories;
+using CS_Discord_Bot.Handlers;
+using CS_Discord_Bot.Models;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using CS_Discord_Bot.Models;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore;
-using CS_Discord_Bot.Factories;
-using System.Threading;
 using System.Diagnostics;
-using CS_Discord_Bot.Commands;
-using CS_Discord_Bot.Handlers;
 using EventHandler = CS_Discord_Bot.Handlers.EventHandler;
 
 namespace CS_Discord_Bot
@@ -30,7 +28,8 @@ namespace CS_Discord_Bot
 #pragma warning restore CS8618
 
 
-        public Program() {
+        public Program()
+        {
 
             _MAIN_THREAD = Thread.CurrentThread.ManagedThreadId;
             app_config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appdata\\configuration.json", optional: false, reloadOnChange: true).Build();
@@ -49,7 +48,8 @@ namespace CS_Discord_Bot
 
 
             _service_provider = new ServiceCollection()
-           .AddSingleton<DiscordSocketClient>(provider => {
+           .AddSingleton<DiscordSocketClient>(provider =>
+           {
                var config = new DiscordSocketConfig
                {
                    GatewayIntents = GatewayIntents.Guilds |
@@ -63,7 +63,8 @@ namespace CS_Discord_Bot
                client.Log += Logs.AddLog;
                return client;
            })
-           .AddSingleton<CommandService>(provider => {
+           .AddSingleton<CommandService>(provider =>
+           {
                var commands = new CommandService();
                commands.Log += Logs.AddLog;
                return commands;
@@ -73,7 +74,7 @@ namespace CS_Discord_Bot
 
            .AddScoped<MusicClientFactory>()
            .AddDbContextFactory<DiscordMusicDBContext>(options => options.UseSqlServer(app_config["connection_string"]))
-           
+
            .BuildServiceProvider();
 
 
@@ -113,7 +114,8 @@ namespace CS_Discord_Bot
             Environment.Exit(0);
         }
 
-        protected async Task UpdateDBGuilds() {
+        protected async Task UpdateDBGuilds()
+        {
             using var _context = new DiscordMusicDBContext();
             foreach (var guild in _client.Guilds)
             {
@@ -131,32 +133,33 @@ namespace CS_Discord_Bot
                 }
             }
         }
-        
+
 
         protected static async void OnProcessExit(object? sender, EventArgs e)
         {
-                try
-                {
-                    var musicClientsContainer = _service_provider.GetRequiredService<MusicClientsContainer>();
-                    await musicClientsContainer.DisposeAsync();
-                    await _client.StopAsync();
-                }
-                catch (Exception ex)
-                {
-                    await Logs.AddLog($"Error during process exit: {ex.Message}", LogLevel.ERROR);
-                }
-                finally
-                {
-                    _client.Dispose();
-                }
+            try
+            {
+                var musicClientsContainer = _service_provider.GetRequiredService<MusicClientsContainer>();
+                await musicClientsContainer.DisposeAsync();
+                await _client.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                await Logs.AddLog($"Error during process exit: {ex.Message}", LogLevel.ERROR);
+            }
+            finally
+            {
+                _client.Dispose();
+            }
         }
 
-        public async Task OnReady() {
+        public async Task OnReady()
+        {
             await _service_provider.GetRequiredService<MusicClientsContainer>().Fill();
             await Logs.AddLog($"logged as {_client.CurrentUser.Username}", LogLevel.WARNING);
-            
+
         }
 
     }
-    
+
 }

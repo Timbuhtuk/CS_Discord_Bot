@@ -12,8 +12,8 @@ namespace CS_Discord_Bot
     /// </summary>
     public struct VideoFinder
     {
-        static YoutubeClient client = new YoutubeClient();
-        static bool SupportSpotify = bool.Parse(Program.app_config["spotify_settings:SPOTIFY_ENABLED"]);
+        private static YoutubeClient client = new YoutubeClient();
+        private static bool SupportSpotify = bool.Parse(Program.app_config["spotify_settings:SPOTIFY_ENABLED"]);
 
         /// <summary>
         /// Find video on Youtube by name or link to Youtube or Spotify , supports single tracks and playlists
@@ -83,7 +83,8 @@ namespace CS_Discord_Bot
             else if (query.Contains("https://open.spotify.com/track/"))
             {
                 if (!SupportSpotify) return null;
-                try { 
+                try
+                {
                     var config = SpotifyClientConfig.CreateDefault();
                     var request = new ClientCredentialsRequest(Program.app_config["spotify_settings:SPOTIFY_CLIENT_ID"], Program.app_config["spotify_settings:SPOTIFY_CLIENT_SECRET"]);
                     var response = await new OAuthClient(config).RequestToken(request);
@@ -119,7 +120,7 @@ namespace CS_Discord_Bot
 
                 var result = new Dictionary<string, string>();
 
-                
+
                 if (playlist.Tracks != null && playlist.Tracks.Items != null)
                 {
                     foreach (var trackItem in playlist.Tracks.Items)
@@ -174,7 +175,7 @@ namespace CS_Discord_Bot
         /// <returns> List&lt;Song&gt; or null if no searching results</returns>
         public static async Task<List<Song>?> Find(string query, bool return_song)
         {
-            using LogScope log_scope = new LogScope($"Find called for {query}",ConsoleColor.Green);
+            using LogScope log_scope = new LogScope($"Find called for {query}", ConsoleColor.Green);
 
             if (string.IsNullOrEmpty(query))
             {
@@ -194,11 +195,13 @@ namespace CS_Discord_Bot
                     await Logs.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new List<Song>();
-                    result.Add(new Song() { 
-                        Link = video.Url, 
-                        Name = video.Title, 
-                        AuthorName = video.Author.ChannelTitle , 
-                        Duration = video.Duration != null ? video.Duration.Value.TotalSeconds / 60 : 0 }
+                    result.Add(new Song()
+                    {
+                        Link = video.Url,
+                        Name = video.Title,
+                        AuthorName = video.Author.ChannelTitle,
+                        Duration = video.Duration != null ? video.Duration.Value.TotalSeconds / 60 : 0
+                    }
                     );
 
                     return result;
@@ -247,7 +250,8 @@ namespace CS_Discord_Bot
             else if (query.Contains("https://open.spotify.com/track/"))
             {
                 if (!SupportSpotify) return null;
-                try { 
+                try
+                {
                     var config = SpotifyClientConfig.CreateDefault();
                     var request = new ClientCredentialsRequest(Program.app_config["spotify_settings:SPOTIFY_CLIENT_ID"], Program.app_config["spotify_settings:SPOTIFY_CLIENT_SECRET"]);
                     var response = await new OAuthClient(config).RequestToken(request);
@@ -259,7 +263,7 @@ namespace CS_Discord_Bot
 
 
                     Console.WriteLine($"Track: {track.Name}, Artist: {track.Artists.First().Name}");
-                    return Find($"{track.Name} - {track.Artists.First().Name}",true).Result;
+                    return Find($"{track.Name} - {track.Artists.First().Name}", true).Result;
                 }
                 catch (Exception ex)
                 {
@@ -283,7 +287,7 @@ namespace CS_Discord_Bot
 
                 var result = new List<Song>();
 
-                
+
 
                 foreach (var trackItem in playlist.Tracks.Items)
                 {
@@ -473,7 +477,7 @@ namespace CS_Discord_Bot
                     if (track != null)
                     {
                         Song? song = VideoFinder.Find($"{track.Name} - {track.Artists.First().Name}", true).Result?.First();
-                        if(song != null)
+                        if (song != null)
                             result.Add(song);
                     }
                 }

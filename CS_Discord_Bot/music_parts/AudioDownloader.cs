@@ -1,9 +1,7 @@
-﻿using YoutubeDLSharp;
-using YoutubeDLSharp.Options;
+﻿using CS_Discord_Bot.Models;
 using System.Diagnostics;
-using CS_Discord_Bot.Models;
-using Newtonsoft.Json;
-using System.Net;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Options;
 using YoutubeExplode;
 
 namespace CS_Discord_Bot
@@ -11,16 +9,17 @@ namespace CS_Discord_Bot
     /// <summary>
     /// Enum with names of libs for downloading
     /// </summary>
-    public enum Provider {
+    public enum Provider
+    {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         YoutubeExplode,
         YoutubeDLSharp
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
     public struct AudioDownloader
-    {   
-        private readonly static YoutubeDL ytdl = new YoutubeDL();
-        private readonly static YoutubeClient youtube = new YoutubeClient();
+    {
+        private static readonly YoutubeDL ytdl = new YoutubeDL();
+        private static readonly YoutubeClient youtube = new YoutubeClient();
 
         private const string download_file_extension = ".mp3";
         private const string storage_file_extension = ".pcm";
@@ -121,7 +120,7 @@ namespace CS_Discord_Bot
                 }
             }
             return null;
-            
+
         }
 
         /// <summary>
@@ -131,8 +130,9 @@ namespace CS_Discord_Bot
         /// <param name="path">output directory for downloading .mp3</param>
         ///   /// <param name="provider">determinates witch library use to download the audio</param>
         /// <returns>Song object instance with valid FilePath .mp3</returns>
-        public static async Task<Song?> Download(Song song, string path, Provider provider = current_working_provider) {
-            if(song.Link!=null)
+        public static async Task<Song?> Download(Song song, string path, Provider provider = current_working_provider)
+        {
+            if (song.Link != null)
             {
                 var result = await Download(song.Name, song.Link, path, provider);
                 if (result == null)
@@ -143,7 +143,7 @@ namespace CS_Discord_Bot
             }
             else
             {
-                await Logs.AddLog("song link was null",LogLevel.ERROR);
+                await Logs.AddLog("song link was null", LogLevel.ERROR);
                 return null;
             }
         }
@@ -157,10 +157,10 @@ namespace CS_Discord_Bot
         public static async Task<List<string>> Download(Dictionary<string, string> Url_Title, string path)
         {
             var result = new List<string>();
-            foreach ( var kvp in Url_Title )
+            foreach (var kvp in Url_Title)
             {
                 var out_path = await Download(kvp.Value, kvp.Key, path);
-                if (out_path != null) 
+                if (out_path != null)
                     result.Add(out_path);
             }
             return result;
@@ -175,10 +175,10 @@ namespace CS_Discord_Bot
         public static async Task<List<Song>> Download(List<Song> songs, string path)
         {
             var result = new List<Song>();
-            foreach ( var song in songs )
+            foreach (var song in songs)
             {
                 var out_path = await Download(song, path);
-                if(out_path != null)
+                if (out_path != null)
                     result.Add(out_path);
             }
             return result;

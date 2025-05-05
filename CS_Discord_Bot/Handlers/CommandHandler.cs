@@ -1,8 +1,7 @@
-﻿using System.Reflection;
-using System.Threading.Tasks;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace CS_Discord_Bot.Handlers
 {
@@ -24,7 +23,7 @@ namespace CS_Discord_Bot.Handlers
             _client.MessageReceived += HandleCommandAsync;
             var modules_info = await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _service_provider);
 
-            await Logs.AddLog($"Modules registered: {string.Join(", ", modules_info.Select(x => x.Name))}" );
+            await Logs.AddLog($"Modules registered: {string.Join(", ", modules_info.Select(x => x.Name))}");
             await Logs.AddLog($"With commands: {string.Join(", ", modules_info.Select(x => string.Join(", ", x.Commands.Select(y => y.Name))))}");
             await Logs.AddLog("Command handler registered");
         }

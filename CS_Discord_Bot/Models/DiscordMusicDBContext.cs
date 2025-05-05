@@ -1,5 +1,5 @@
-﻿using CS_Discord_Bot.Models;
-using CS_Discord_Bot;
+﻿using CS_Discord_Bot;
+using CS_Discord_Bot.Models;
 using Microsoft.EntityFrameworkCore;
 
 public partial class DiscordMusicDBContext : DbContext

@@ -1,11 +1,5 @@
 ﻿using Discord;
-using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Windows.Controls;
-using System.Windows.Forms;
-using System.Windows.Shapes;
-using static System.Windows.Forms.LinkLabel;
 
 namespace CS_Discord_Bot
 {
@@ -33,7 +27,7 @@ namespace CS_Discord_Bot
             [CallerLineNumber] int line = 0)
         {
             await Task.Yield();
-            
+
 
             if (LoggingLevel >= log_level)
             {
@@ -44,9 +38,9 @@ namespace CS_Discord_Bot
 
                 for (int q = 0; q < depth; q++)
                     offset += " |";
-                if (depth > 0)  
+                if (depth > 0)
                     offset += "->";
-                else if(color == ConsoleColor.White)
+                else if (color == ConsoleColor.White)
                     color = outline_color;
 
 
@@ -54,7 +48,7 @@ namespace CS_Discord_Bot
 
                 lock (_logLock)
                 {
-                    
+
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.Write($"[{time}]");
                     Console.ForegroundColor = outline_color;
@@ -78,7 +72,7 @@ namespace CS_Discord_Bot
             ConsoleColor color = msgType == LogLevel.ERROR ? ConsoleColor.Red : msgType == LogLevel.WARNING ? ConsoleColor.Yellow : ConsoleColor.White;
             string type = msgType == LogLevel.ERROR ? "ERR" : msgType == LogLevel.WARNING ? "WAR" : "INF";
             int level = msgType == LogLevel.ERROR ? 1 : msgType == LogLevel.WARNING ? 2 : 3;
-            await AddLog(message,color,level,type,caller,file,line);
+            await AddLog(message, color, level, type, caller, file, line);
         }
 
         public static async Task AddLog(LogMessage log)
@@ -108,17 +102,17 @@ namespace CS_Discord_Bot
         {
             storaged_color = Logs.outline_color;
             Logs.outline_color = color;
-            Logs.AddLog(msg,msgType: LogLevel.INFO).Wait();
+            Logs.AddLog(msg, msgType: LogLevel.INFO).Wait();
             Logs.depth++;
             //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
             this.caller = caller;
         }
-           
+
         public void Dispose()
         {
             Logs.depth = Logs.depth - 1 < 0 ? 0 : Logs.depth - 1;
             if (Logs.depth == 0)
-            { 
+            {
                 Logs.outline_color = Logs._DEFAULT_OUTLINE_COLOR;
             }
             else if (storaged_color != null)
