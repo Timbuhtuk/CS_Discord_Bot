@@ -83,31 +83,33 @@ namespace CS_Discord_Bot
             _component_handler = new ComponentHandler(_client);
             _event_handler = new EventHandler(_client);
             _db_context_factory = new DiscordMusicDBContext();
-            
         }
         public static async Task Main(string[] args) => await new Program().RunBotAsync();
 
         public async Task RunBotAsync()
         {
+            using LogScope log_scope = new LogScope("Staring up", ConsoleColor.Green);
+
             await _command_handler.RegisterCommandsAsync();
             await _component_handler.RegisterComponentsAsync();
             await _event_handler.RegisterEventsAsync();
 
             await Logs.AddLog($"use_database: {app_config["use_database"]!}");
+            await Logs.AddLog($"connection string: {app_config["connection_string"]!}");
 
             await _client.LoginAsync(TokenType.Bot, app_config["tokens:0"]);
             await _client.StartAsync();
             await UpdateDBGuilds();
-            _ = ResolveMissingfilesInDB();
+            _ = DiscordMusicDBContext.ResolveMissingfilesInDB();
 
             _client.Ready += OnReady;
 
-            
+            log_scope.Dispose();
             await Task.Delay(-1);
         }
         public static void RestartApplication()
         {
-            Process.Start(Process.GetCurrentProcess().MainModule.FileName);
+            Process.Start(Process.GetCurrentProcess().MainModule!.FileName);
             Environment.Exit(0);
         }
 
@@ -129,35 +131,7 @@ namespace CS_Discord_Bot
                 }
             }
         }
-        public async Task<int> ResolveMissingfilesInDB()
-        {
-            using LogScope log_scope = new LogScope("CleanUpDb called", ConsoleColor.Red);
-            using var context = new DiscordMusicDBContext();
-            int resolved = 0;
-
-            List<Song> songs = context.Songs.ToList();
-            foreach (Song song in songs)
-            {
-                if (song.FilePath == null || !File.Exists(song.FilePath))
-                {
-                    Song? downloaded_song = await AudioDownloader.Download(song, Program.app_config["music_client:music_folder"]!);
-                    if (downloaded_song == null)
-                    {
-                        context.Remove(song);
-                        await Logs.AddLog($"{song.Name} - removed from DB");
-                    }
-                    resolved++;
-                }
-            }
-            List<string?> file_pathes = context.Songs.Select(s => s.FilePath).ToList();
-            foreach(var file in Directory.GetFiles(Program.app_config["music_client:music_folder"]!))
-            {
-                if (!file_pathes.Contains(file))
-                    File.Delete(file);
-            }
-            context.SaveChanges();
-            return resolved;
-        }
+        
 
         protected static async void OnProcessExit(object? sender, EventArgs e)
         {

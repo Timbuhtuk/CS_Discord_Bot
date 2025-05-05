@@ -24,7 +24,8 @@ namespace CS_Discord_Bot.Handlers
             _client.MessageReceived += HandleCommandAsync;
             var modules_info = await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _service_provider);
 
-            await Logs.AddLog($"modules registered: {string.Join(", ", modules_info.Select(x => x.Name))}" + '\n' + $"with commands: {string.Join(", ", modules_info.Select(x => string.Join(", ", x.Commands.Select(y => y.Name))))}", LogLevel.WARNING);
+            await Logs.AddLog($"Modules registered: {string.Join(", ", modules_info.Select(x => x.Name))}" );
+            await Logs.AddLog($"With commands: {string.Join(", ", modules_info.Select(x => string.Join(", ", x.Commands.Select(y => y.Name))))}");
             await Logs.AddLog("Command handler registered");
         }
 

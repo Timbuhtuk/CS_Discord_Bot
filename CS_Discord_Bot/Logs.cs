@@ -97,6 +97,13 @@ namespace CS_Discord_Bot
             //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
             this.caller = caller;
         }
+        public LogScope(string msg, [CallerMemberName] string caller = "")
+        {
+            Logs.AddLog(msg, msgType: LogLevel.INFO).Wait();
+            Logs.depth++;
+            //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
+            this.caller = caller;
+        }
         public LogScope(string msg, ConsoleColor color, [CallerMemberName] string caller = "")
         {
             storaged_color = Logs.outline_color;
@@ -105,7 +112,6 @@ namespace CS_Discord_Bot
             Logs.depth++;
             //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
             this.caller = caller;
-            
         }
            
         public void Dispose()

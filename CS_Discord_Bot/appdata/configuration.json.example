@@ -30,6 +30,5 @@
     "ready": "ready"
   },
   "use_database": true,
-  "connection_string": "your_connection_string",
-  "owner_id": 0
+  "connection_string": "your_connection_string"
 }

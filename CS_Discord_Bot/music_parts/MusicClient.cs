@@ -70,8 +70,7 @@ namespace CS_Discord_Bot
         
         public async Task ClearAsync(ICommandContext context)
         {
-            await Logs.AddLog("ClearAsync called");
-            using LogScope log_scope = new LogScope();
+            using LogScope log_scope = new LogScope("ClearAsync called");
 
             music_queue.Clear();
             await LeaveAsync(context);
@@ -102,8 +101,7 @@ namespace CS_Discord_Bot
         }
         public async Task LeaveAsync(ICommandContext? context = null)
         {
-            await Logs.AddLog("LeaveAsync called");
-            using LogScope log_scope = new LogScope();
+            using LogScope log_scope = new LogScope("LeaveAsync called");
 
             if (audio_client != null)
             {

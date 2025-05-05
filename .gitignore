@@ -362,9 +362,11 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+# MyOwn
 *.pcm
 *.mp3
 *.exe
 configuration.json
 youtubeCookies.txt
+CreatorCommands.cs
 /music

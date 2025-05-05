@@ -21,7 +21,7 @@ namespace CS_Discord_Bot.Handlers
         public Task RegisterComponentsAsync()
         {
             _client.InteractionCreated += HandleComponentAsync;
-            Logs.AddLog("component handler registered");
+            Logs.AddLog("Component handler registered");
             return Task.CompletedTask;
         }
 

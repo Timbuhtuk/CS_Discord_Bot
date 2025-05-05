@@ -18,7 +18,7 @@ public partial class DiscordMusicDBContext : DbContext
     public virtual DbSet<Song> Songs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer(/*"Server=Timbuhtuk;Database=DiscordMusicDB;Integrated Security=True;TrustServerCertificate=True"*/Program.app_config["connection_string"]);
+        => optionsBuilder.UseSqlServer(Program.app_config["connection_string"]);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,4 +83,39 @@ public partial class DiscordMusicDBContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+    public static async Task<int> ResolveMissingfilesInDB()
+    {
+        using LogScope log_scope = new LogScope("CleanUpDb called", ConsoleColor.Red);
+        using var context = new DiscordMusicDBContext();
+        int resolved = 0;
+
+        List<Song> songs = context.Songs.ToList();
+        foreach (Song song in songs)
+        {
+            if (song.FilePath == null || !File.Exists(song.FilePath))
+            {
+                Song? downloaded_song = await AudioDownloader.Download(song, Program.app_config["music_client:music_folder"]!);
+                if (downloaded_song == null)
+                {
+                    context.Remove(song);
+                    await Logs.AddLog($"{song.Name} - removed from DB");
+                }
+                else
+                {
+                    song.FilePath = downloaded_song.FilePath;
+                }
+
+                resolved++;
+            }
+        }
+        List<string?> file_pathes = context.Songs.Select(s => s.FilePath).ToList();
+        foreach (var file in Directory.GetFiles(Program.app_config["music_client:music_folder"]!))
+        {
+            if (!file_pathes.Contains(file))
+                File.Delete(file);
+        }
+        context.SaveChanges();
+        return resolved;
+    }
 }
