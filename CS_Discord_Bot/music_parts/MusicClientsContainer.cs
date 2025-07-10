@@ -21,12 +21,13 @@ namespace CS_Discord_Bot
         public async Task Fill()
         {
             music_clients = new Dictionary<ulong, MusicClient>();
+            using var _context = _db_context_factory.CreateDbContext();
             foreach (var guild in Program._client.Guilds)
             {
-                using var _context = _db_context_factory.CreateDbContext();
-                var models_guild = _context.Guilds.FirstOrDefault(g => g.DiscordId == guild.Id);
+                Guild? models_guild = _context.Guilds.FirstOrDefault(g => g.DiscordId == guild.Id);
                 music_clients.TryAdd(guild.Id, Program._service_provider.GetRequiredService<MusicClientFactory>().Create(models_guild));
             }
+            await Logger.AddLog($"MusicClient created for {Program._client.Guilds.Count} guilds");
         }
 
         public async Task Update(SocketGuild guild)

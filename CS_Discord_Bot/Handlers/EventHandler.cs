@@ -20,7 +20,7 @@ namespace CS_Discord_Bot.Handlers
             _client.MessageReceived += MessageReceived;
             _client.ModalSubmitted += HandleModalAsync;
 
-            Logs.AddLog("Event handler registered");
+            Logger.AddLog("Event handler registered");
             return Task.CompletedTask;
 
         }
@@ -64,6 +64,10 @@ namespace CS_Discord_Bot.Handlers
             Program._service_provider.GetRequiredService<MusicClientsContainer>().music_clients.TryGetValue((message.Channel as IGuildChannel).GuildId, out music_client);
             if (music_client != null)
             {
+                if (message.Content.StartsWith(Program.app_config["command_tag"]!))
+                {
+                    return;
+                }
                 if (message.Author.Id == _client.CurrentUser.Id && message.Content == ".")
                 {
                     await music_client.SetViewMessage(message);

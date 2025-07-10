@@ -18,7 +18,8 @@ public partial class DiscordMusicDBContext : DbContext
     public virtual DbSet<Song> Songs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer(Program.app_config["connection_string"]);
+        => optionsBuilder.UseSqlServer(Program.app_config["connection_string"])/*.EnableSensitiveDataLogging() // Для отображения чувствительных данных в логах
+                .LogTo(Console.Write, Microsoft.Extensions.Logging.LogLevel.Information)*/; // Логирование в консоль;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +39,8 @@ public partial class DiscordMusicDBContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.AuthorId).HasColumnName("Author_id");
             entity.Property(e => e.CreationDate).HasColumnName("Creation_date");
+
+
             entity.Property(e => e.IsPublic).HasColumnName("Is_public");
             entity.Property(e => e.Name).HasMaxLength(128);
         });
@@ -99,7 +102,7 @@ public partial class DiscordMusicDBContext : DbContext
                 if (downloaded_song == null)
                 {
                     context.Remove(song);
-                    await Logs.AddLog($"{song.Name} - removed from DB");
+                    await Logger.AddLog($"{song.Name} - removed from DB");
                 }
                 else
                 {

@@ -1,4 +1,5 @@
-﻿using CS_Discord_Bot.Models;
+﻿using CS_Discord_Bot.Enums;
+using CS_Discord_Bot.Models;
 using System.Diagnostics;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Options;
@@ -45,12 +46,12 @@ namespace CS_Discord_Bot
 
                 if (File.Exists(Path.Combine(path, pureVideoName + storage_file_extension)))
                 {
-                    await Logs.AddLog($"Audio already downloaded and converted");
+                    await Logger.AddLog($"Audio already downloaded and converted");
                     return output;
                 }
                 if (File.Exists(output))
                 {
-                    await Logs.AddLog($"Audio already downloaded");
+                    await Logger.AddLog($"Audio already downloaded");
                     output = await FfmpegInteractor.ConvertMp3ToPcm(output);
                     return output;
                 }
@@ -60,14 +61,14 @@ namespace CS_Discord_Bot
                     try
                     {
                         var video = await youtube.Videos.GetAsync(Url);
-                        await Logs.AddLog($"Video found: {video.Title}");
+                        await Logger.AddLog($"Video found: {video.Title}");
 
                         var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
                         var audioStreamInfo = streamManifest.GetAudioOnlyStreams().Where(S => S.Bitrate.BitsPerSecond == streamManifest.GetAudioOnlyStreams().Max(s => s.Bitrate.BitsPerSecond)).First();
 
                         if (audioStreamInfo == null)
                         {
-                            await Logs.AddLog($"No audio stream available", LogLevel.ERROR);
+                            await Logger.AddLog($"No audio stream available", LogLevel.ERROR);
                             return null;
                         }
 
@@ -76,13 +77,13 @@ namespace CS_Discord_Bot
                         await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, output);
                         watch.Stop();
 
-                        await Logs.AddLog($"Download completed in {watch.Elapsed}");
+                        await Logger.AddLog($"Download completed in {watch.Elapsed}");
                         output = await FfmpegInteractor.ConvertMp3ToPcm(output);
                         return output;
                     }
                     catch (Exception ex)
                     {
-                        await Logs.AddLog($"Download failed: {ex.Message}", LogLevel.ERROR);
+                        await Logger.AddLog($"Download failed: {ex.Message}", LogLevel.ERROR);
                         return null;
                     }
                 }
@@ -102,18 +103,18 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var result = await ytdl.RunVideoDownload(url, overrideOptions: options);
                     watch.Stop();
-                    await Logs.AddLog($"download video taken {watch.Elapsed}");
+                    await Logger.AddLog($"download video taken {watch.Elapsed}");
 
 
                     if (result.Success)
                     {
-                        await Logs.AddLog("Download completed successfully!");
+                        await Logger.AddLog("Download completed successfully!");
                         output = await FfmpegInteractor.ConvertMp3ToPcm(output);
                         return output;
                     }
                     else
                     {
-                        await Logs.AddLog($"Download failed: {result.ErrorOutput[0]}", LogLevel.ERROR);
+                        await Logger.AddLog($"Download failed: {result.ErrorOutput[0]}", LogLevel.ERROR);
                         return null;
                     }
 
@@ -143,7 +144,7 @@ namespace CS_Discord_Bot
             }
             else
             {
-                await Logs.AddLog("song link was null", LogLevel.ERROR);
+                await Logger.AddLog("song link was null", LogLevel.ERROR);
                 return null;
             }
         }

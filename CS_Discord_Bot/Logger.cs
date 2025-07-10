@@ -1,15 +1,10 @@
-﻿using Discord;
+﻿using CS_Discord_Bot.Enums;
+using Discord;
 using System.Runtime.CompilerServices;
 
 namespace CS_Discord_Bot
 {
-    public enum LogLevel
-    {
-        INFO,
-        ERROR,
-        WARNING,
-    }
-    public struct Logs
+    public struct Logger
     {
         private static readonly object _logLock = new object();
         public static int LoggingLevel { get; set; } = Int16.Parse(Program.app_config["logging"]!); // 0 - no logging, 1 - only error, 2 - warnings, 3 - all
@@ -78,46 +73,6 @@ namespace CS_Discord_Bot
         public static async Task AddLog(LogMessage log)
         {
             await AddLog(log.Exception == null ? log.Message : log.Exception.Message, log.Exception == null ? LogLevel.INFO : LogLevel.ERROR);
-        }
-    }
-    public class LogScope : IDisposable
-    {
-        private readonly ConsoleColor? storaged_color;
-        private string caller;
-        public LogScope([CallerMemberName] string caller = "")
-        {
-            //storaged_color = Logs.outline_color;
-            Logs.depth++;
-            //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
-            this.caller = caller;
-        }
-        public LogScope(string msg, [CallerMemberName] string caller = "")
-        {
-            Logs.AddLog(msg, msgType: LogLevel.INFO).Wait();
-            Logs.depth++;
-            //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
-            this.caller = caller;
-        }
-        public LogScope(string msg, ConsoleColor color, [CallerMemberName] string caller = "")
-        {
-            storaged_color = Logs.outline_color;
-            Logs.outline_color = color;
-            Logs.AddLog(msg, msgType: LogLevel.INFO).Wait();
-            Logs.depth++;
-            //Logs.AddLog($"+Scope {caller}", LogLevel.ERROR).Wait();
-            this.caller = caller;
-        }
-
-        public void Dispose()
-        {
-            Logs.depth = Logs.depth - 1 < 0 ? 0 : Logs.depth - 1;
-            if (Logs.depth == 0)
-            {
-                Logs.outline_color = Logs._DEFAULT_OUTLINE_COLOR;
-            }
-            else if (storaged_color != null)
-                Logs.outline_color = storaged_color.Value;
-            //Logs.AddLog($"-Scope {caller}", LogLevel.ERROR).Wait();
         }
     }
 }

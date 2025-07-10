@@ -1,4 +1,5 @@
 ﻿using CS_Discord_Bot.Commands;
+using CS_Discord_Bot.Enums;
 using CS_Discord_Bot.Factories;
 using CS_Discord_Bot.Handlers;
 using CS_Discord_Bot.Models;
@@ -23,16 +24,34 @@ namespace CS_Discord_Bot
         public static EventHandler _event_handler;
         public static ServiceProvider _service_provider;
         public static IConfigurationRoot app_config;
-        private readonly DiscordMusicDBContext _db_context_factory;
         public static int _MAIN_THREAD;
+        private LogScope log_scope;
 #pragma warning restore CS8618
-
+        public DbReacheableStatus IsDbReachable
+        {
+            get
+            {
+                try
+                {
+                    var _context = new DiscordMusicDBContext();
+                    if (_context == null) return DbReacheableStatus.CantCreateContext;
+                    if (_context.Database == null) return DbReacheableStatus.ContextDatabaseNull;
+                    return _context.Database.CanConnect() == true ? DbReacheableStatus.Reacheable : DbReacheableStatus.Unreacheable;
+                }
+                catch (Exception e)
+                {
+                    Logger.AddLog(e.Message, LogLevel.ERROR).Wait();
+                    return DbReacheableStatus.Exception;
+                }
+            }
+        }
 
         public Program()
         {
 
             _MAIN_THREAD = Thread.CurrentThread.ManagedThreadId;
             app_config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appdata\\configuration.json", optional: false, reloadOnChange: true).Build();
+
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
 
@@ -60,22 +79,23 @@ namespace CS_Discord_Bot
                };
 
                var client = new DiscordSocketClient(config);
-               client.Log += Logs.AddLog;
+               client.Log += Logger.AddLog;
                return client;
            })
            .AddSingleton<CommandService>(provider =>
            {
                var commands = new CommandService();
-               commands.Log += Logs.AddLog;
+               commands.Log += Logger.AddLog;
                return commands;
            })
            .AddSingleton<MusicCommands>()
            .AddSingleton<MusicClientsContainer>()
-
-           .AddScoped<MusicClientFactory>()
            .AddDbContextFactory<DiscordMusicDBContext>(options => options.UseSqlServer(app_config["connection_string"]))
+           .AddScoped<MusicClientFactory>()
+
 
            .BuildServiceProvider();
+
 
 
             _client = _service_provider.GetRequiredService<DiscordSocketClient>();
@@ -83,29 +103,29 @@ namespace CS_Discord_Bot
             _command_handler = new CommandHandler(_commands, _client, _service_provider);
             _component_handler = new ComponentHandler(_client);
             _event_handler = new EventHandler(_client);
-            _db_context_factory = new DiscordMusicDBContext();
         }
         public static async Task Main(string[] args) => await new Program().RunBotAsync();
 
         public async Task RunBotAsync()
         {
-            using LogScope log_scope = new LogScope("Staring up", ConsoleColor.Green);
+            log_scope = new LogScope("Staring up", ConsoleColor.Green);
 
             await _command_handler.RegisterCommandsAsync();
             await _component_handler.RegisterComponentsAsync();
             await _event_handler.RegisterEventsAsync();
 
-            await Logs.AddLog($"use_database: {app_config["use_database"]!}");
-            await Logs.AddLog($"connection string: {app_config["connection_string"]!}");
+            await Logger.AddLog($"use_database: {app_config["use_database"]!}");
+            await Logger.AddLog($"connection string: {app_config["connection_string"]!}");
 
             await _client.LoginAsync(TokenType.Bot, app_config["tokens:0"]);
+
             await _client.StartAsync();
-            await UpdateDBGuilds();
-            _ = DiscordMusicDBContext.ResolveMissingfilesInDB();
+
+
 
             _client.Ready += OnReady;
 
-            log_scope.Dispose();
+
             await Task.Delay(-1);
         }
         public static void RestartApplication()
@@ -116,7 +136,10 @@ namespace CS_Discord_Bot
 
         protected async Task UpdateDBGuilds()
         {
+            await Logger.AddLog("UpdateDBGuilds called");
+
             using var _context = new DiscordMusicDBContext();
+
             foreach (var guild in _client.Guilds)
             {
                 var models_guild = _context.Guilds.FirstOrDefault(g => g.DiscordId == guild.Id);
@@ -145,7 +168,7 @@ namespace CS_Discord_Bot
             }
             catch (Exception ex)
             {
-                await Logs.AddLog($"Error during process exit: {ex.Message}", LogLevel.ERROR);
+                await Logger.AddLog($"Error during process exit: {ex.Message}", LogLevel.ERROR);
             }
             finally
             {
@@ -155,9 +178,18 @@ namespace CS_Discord_Bot
 
         public async Task OnReady()
         {
-            await _service_provider.GetRequiredService<MusicClientsContainer>().Fill();
-            await Logs.AddLog($"logged as {_client.CurrentUser.Username}", LogLevel.WARNING);
+            await Logger.AddLog($"Database is {IsDbReachable}", LogLevel.ERROR);
+            //if (IsDbReachable != DbReacheableStatus.Reacheable)
+            //{
 
+            //    Thread.Sleep(1000);
+            //    Environment.Exit(404);
+            //}
+            await UpdateDBGuilds();
+            await _service_provider.GetRequiredService<MusicClientsContainer>().Fill();
+            await Logger.AddLog($"logged as {_client.CurrentUser.Username}", LogLevel.WARNING);
+            log_scope.Dispose();
+            _ = DiscordMusicDBContext.ResolveMissingfilesInDB();
         }
 
     }

@@ -8,7 +8,7 @@ public partial class Playlist
 
     public ulong AuthorId { get; set; }
 
-    public DateOnly CreationDate { get; set; }
+    public DateTime CreationDate { get; set; }
 
     public bool IsPublic { get; set; } = false;
 

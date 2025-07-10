@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using CS_Discord_Bot.Enums;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace CS_Discord_Bot
@@ -11,7 +12,7 @@ namespace CS_Discord_Bot
                 return null;
             if (!File.Exists(file_path))
             {
-                await Logs.AddLog("File to convert not found!", LogLevel.ERROR);
+                await Logger.AddLog("File to convert not found!", LogLevel.ERROR);
                 return null;
             }
 
@@ -23,7 +24,7 @@ namespace CS_Discord_Bot
 
             if (!File.Exists(ffmpegPath))
             {
-                await Logs.AddLog("FFmpeg executable not found!", LogLevel.ERROR);
+                await Logger.AddLog("FFmpeg executable not found!", LogLevel.ERROR);
                 return null;
             }
 
@@ -42,12 +43,12 @@ namespace CS_Discord_Bot
             ffmpegProcess.ErrorDataReceived += (sender, e) =>
             {
                 //if (!string.IsNullOrEmpty(e.Data))
-                //Logs.AddLog($"FFMPEG Error: {e.Data}").Wait();
+                //Logger.AddLog($"FFMPEG Error: {e.Data}").Wait();
             };
 
             if (!ffmpegProcess.Start())
             {
-                await Logs.AddLog("FFMPEG STARTUP ERROR", LogLevel.ERROR);
+                await Logger.AddLog("FFMPEG STARTUP ERROR", LogLevel.ERROR);
                 return null;
             }
 
@@ -57,10 +58,10 @@ namespace CS_Discord_Bot
 
             if (ffmpegProcess.ExitCode != 0)
             {
-                await Logs.AddLog($"FFmpeg conversion failed with exit code {ffmpegProcess.ExitCode}", LogLevel.ERROR);
+                await Logger.AddLog($"FFmpeg conversion failed with exit code {ffmpegProcess.ExitCode}", LogLevel.ERROR);
             }
 
-            await Logs.AddLog("FFMPEG - conversion completed");
+            await Logger.AddLog("FFMPEG - conversion completed");
             return output_file_path;
         }
 

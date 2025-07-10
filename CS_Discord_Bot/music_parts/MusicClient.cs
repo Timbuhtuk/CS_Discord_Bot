@@ -1,4 +1,5 @@
-﻿using CS_Discord_Bot.Models;
+﻿using CS_Discord_Bot.Enums;
+using CS_Discord_Bot.Models;
 using Discord;
 using Discord.Audio;
 using Discord.Commands;
@@ -56,7 +57,7 @@ namespace CS_Discord_Bot
 
             this._db_context_factory = factory;
             this.guild = factory.CreateDbContext().Guilds.FirstOrDefault(g => g.DiscordId == guild.DiscordId)!;
-            Logs.AddLog($"MusicClient created for guild {guild.Name}").Wait();
+
 
             MainLoop = new System.Threading.Timer(AfterConstruct, null, 0, 899000);
         }
@@ -83,7 +84,7 @@ namespace CS_Discord_Bot
         }
         public async Task SkipAsync(ICommandContext? context = null)
         {
-            await Logs.AddLog("SkipAsync called ");
+            await Logger.AddLog("SkipAsync called ");
             if (on_repeat)
             {
                 KeyValuePair<IVoiceChannel, Song> song;
@@ -110,7 +111,7 @@ namespace CS_Discord_Bot
         }
         public async Task JoinAsync(IVoiceChannel channel)
         {
-            await Logs.AddLog($"JoinAsync to voice channel {channel.Name} called ");
+            await Logger.AddLog($"JoinAsync to voice channel {channel.Name} called ");
 
             if (audio_client != null && audio_client.ConnectionState == ConnectionState.Connected && current_voice_channel != channel)
             {
@@ -147,14 +148,14 @@ namespace CS_Discord_Bot
                 is_paused = true;
                 is_playing = false;
 
-                await Logs.AddLog("Paused");
+                await Logger.AddLog("Paused");
             }
             else if (is_paused)
             {
                 is_paused = false;
                 is_playing = true;
 
-                await Logs.AddLog("Resumed");
+                await Logger.AddLog("Resumed");
             }
         }
         public async Task PlayMusicAsync(CancellationToken cancellationToken)
@@ -172,7 +173,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception e)
                 {
-                    await Logs.AddLog(e.Message, LogLevel.ERROR);
+                    await Logger.AddLog(e.Message, LogLevel.ERROR);
                     return;
                 }
 
@@ -254,7 +255,8 @@ namespace CS_Discord_Bot
         /// <param name="query">name of song or Url or file name </param>
         /// <param name="textChannel">object representing text channel, where command was called</param>
         /// <remarks>
-        /// Find => Download (if needed) => Add to queue song by query
+        /// Find => Download (if needed) => Add to queue song by query. 
+        /// This implementation use IDs and DB
         /// </remarks>
         /// <returns>Task</returns>
         public async Task PlayAsync(IVoiceChannel? voiceChannel, int? song_id = null, int? playlist_id = null)
@@ -263,7 +265,7 @@ namespace CS_Discord_Bot
 
             if (voiceChannel == null)
             {
-                await Logs.AddLog("User not in voice chat", LogLevel.WARNING);
+                await Logger.AddLog("User not in voice chat", LogLevel.WARNING);
                 return;
             }
 
@@ -289,23 +291,34 @@ namespace CS_Discord_Bot
                     music_queue.Enqueue(temp);
                 }
             }
-            await Logs.AddLog("Line len - " + music_queue.Count.ToString());
+            await Logger.AddLog("Line len - " + music_queue.Count.ToString());
 
             await PlayMusicAsync(SkipTokenSource.Token);
             return;
         }
+        /// <summary>
+        /// PLay song provided in query in current voice channel
+        /// </summary>
+        /// <param name="voiceChannel">object representing voice channel</param>
+        /// <param name="query">name of song or Url or file name </param>
+        /// <param name="textChannel">object representing text channel, where command was called</param>
+        /// <remarks>
+        /// Find => Download (if needed) => Add to queue song by query. 
+        /// This implementation use search, DB and online search
+        /// </remarks>
+        /// <returns>Task</returns>
         public async Task PlayAsync(IVoiceChannel? voiceChannel, string query = "", IMessageChannel? textChannel = null)
         {
             using LogScope log_scope = new LogScope($"PlayAsync called for - {query}", ConsoleColor.Magenta);
 
             if (voiceChannel == null)
             {
-                await Logs.AddLog("User not in voice chat", LogLevel.WARNING);
+                await Logger.AddLog("User not in voice chat", LogLevel.WARNING);
                 if (textChannel != null)
                 {
                     await textChannel.SendMessageAsync("user not in voice");
                 }
-                Logs.depth -= 1;
+                Logger.depth -= 1;
                 return;
             }
 
@@ -320,7 +333,7 @@ namespace CS_Discord_Bot
             if (song != null)
             {
                 songs = new List<Song>() { song };
-                await Logs.AddLog("used saved track instead downloading");
+                await Logger.AddLog("used saved track instead downloading");
             }
             else if (playlist != null)
             {
@@ -343,7 +356,7 @@ namespace CS_Discord_Bot
                             .Build()
                         );
                     }
-                    Logs.depth -= 1;
+                    Logger.depth -= 1;
                     return;
                 };
 
@@ -377,7 +390,8 @@ namespace CS_Discord_Bot
                 music_queue.Enqueue(temp);
             }
 
-            await Logs.AddLog("Line len - " + music_queue.Count.ToString());
+            await Logger.AddLog("Line len - " + music_queue.Count.ToString());
+            await UpdateMusicViewAsync();
 
             await PlayMusicAsync(SkipTokenSource.Token);
             return;
@@ -419,7 +433,7 @@ namespace CS_Discord_Bot
 
         //    ffmpeg.Exited += async (sender, args) =>
         //    {
-        //        await Logs.AddLog("FFMPEG - ended");
+        //        await Logger.AddLog("FFMPEG - ended");
         //        is_playing = false;
         //        _ = OnPlayMusicRequired.Invoke();
         //        ffmpeg?.Dispose();
@@ -428,24 +442,24 @@ namespace CS_Discord_Bot
         //    ffmpeg.ErrorDataReceived += (sender, e) =>
         //    {
         //        //if (!string.IsNullOrEmpty(e.Data))
-        //        //    Logs.AddLog($"FFMPEG Error: {e.Data}").Wait();
+        //        //    Logger.AddLog($"FFMPEG Error: {e.Data}").Wait();
         //    };
 
         //    if (!ffmpeg.Start())
         //    {
-        //        await Logs.AddLog("FFMPEG STARTUP ERROR",LogLevel.ERROR);
+        //        await Logger.AddLog("FFMPEG STARTUP ERROR",LogLevel.ERROR);
         //        throw new Exception("FFMPEG STARTUP ERROR");
         //    }
 
         //    ffmpeg.BeginErrorReadLine();
-        //    await Logs.AddLog("FFMPEG - started");
+        //    await Logger.AddLog("FFMPEG - started");
 
         //    return ffmpeg.StandardOutput.BaseStream;
         //}
         public async Task RerenderMusicViewAsync(IMessageChannel? channel = null, IMessage? new_msg = null)
         {
             await _semaphoreSlim.WaitAsync();
-            await Logs.AddLog("View render called");
+            await Logger.AddLog("View render called");
             using LogScope log_scope = new LogScope();
 
             try
@@ -478,7 +492,7 @@ namespace CS_Discord_Bot
             }
             catch (Exception e)
             {
-                await Logs.AddLog(e.Message, LogLevel.ERROR);
+                await Logger.AddLog(e.Message, LogLevel.ERROR);
             }
             finally
             {
@@ -490,7 +504,7 @@ namespace CS_Discord_Bot
         {
 
             await _semaphoreSlim.WaitAsync();
-            await Logs.AddLog("View update called");
+            await Logger.AddLog("View update called");
 
 
             Discord.Embed? embed = null;
@@ -515,7 +529,7 @@ namespace CS_Discord_Bot
             catch (Exception)
             {
                 using LogScope log_scope = new LogScope();
-                await Logs.AddLog("View update failure", LogLevel.WARNING);
+                await Logger.AddLog("View update failure", LogLevel.WARNING);
             }
             finally
             {
@@ -532,7 +546,7 @@ namespace CS_Discord_Bot
             using var _context = _db_context_factory.CreateDbContext();
             _context.Attach(guild);
             guild.Anchor = context.Channel.Id;
-            await Logs.AddLog($"Anchor for {guild.Name} is now {context.Channel.Name}");
+            await Logger.AddLog($"Anchor for {guild.Name} is now {context.Channel.Name}");
 
             await _context.SaveChangesAsync();
         }
@@ -551,7 +565,7 @@ namespace CS_Discord_Bot
             {
                 playback_history.Songs.Remove(playback_history.Songs.Last());
             }
-            await Logs.AddLog("Playback updated");
+            await Logger.AddLog("Playback updated");
         }
 
         public async Task<bool> ToggleMusicLikeAsync(int? playlistId, int? songId = null)
@@ -571,17 +585,17 @@ namespace CS_Discord_Bot
             if (playlist.Songs.Contains(song))
             {
                 playlist.Songs.Remove(song);
-                await Logs.AddLog($"{song.Name} removed from favorite on guild {guild.DiscordId}");
+                await Logger.AddLog($"{song.Name} removed from favorite on guild {guild.DiscordId}");
             }
             else if (playlist.Songs.Count == 23)//limit 25, -2 reserved options in every selector
             {
-                await Logs.AddLog($"{song.Name} did not add to favorite on guild {guild.DiscordId} to much favorite");
+                await Logger.AddLog($"{song.Name} did not add to favorite on guild {guild.DiscordId} to much favorite");
                 return false;
             }
             else
             {
                 playlist.Songs.Add(song);
-                await Logs.AddLog($"{song.Name} added to favorite on guild {guild.DiscordId}");
+                await Logger.AddLog($"{song.Name} added to favorite on guild {guild.DiscordId}");
             }
 
             _context.SaveChanges();
@@ -590,18 +604,18 @@ namespace CS_Discord_Bot
         }
         public async Task<bool> AddPlaylistAsync(string? playlist_name, ulong? author_id)
         {
-            await Logs.AddLog($"AddPlaylistAsync called, playlist name: {playlist_name}");
+            await Logger.AddLog($"AddPlaylistAsync called, playlist name: {playlist_name}");
             using LogScope log_scope = new LogScope();
 
             if (guild.Playlists.Count == 23)
             {
-                await Logs.AddLog("Playlist not added - guild lists count overflow", LogLevel.WARNING);
+                await Logger.AddLog("Playlist not added - guild lists count overflow", LogLevel.WARNING);
                 return false;
             }
 
             if (playlist_name == null || author_id == null)
             {
-                await Logs.AddLog("Playlist or author Id == null", LogLevel.WARNING);
+                await Logger.AddLog("Playlist or author Id == null", LogLevel.WARNING);
                 return false;
             }
 
@@ -612,7 +626,7 @@ namespace CS_Discord_Bot
 
             if (playlistExists)
             {
-                await Logs.AddLog("Playlist already exist", LogLevel.WARNING);
+                await Logger.AddLog("Playlist already exist", LogLevel.WARNING);
                 return false;
             }
             Models.Playlist playlist_entity;
@@ -677,7 +691,7 @@ namespace CS_Discord_Bot
         }
         public async Task<bool> RemovePlaylistAsync(int playlist_id)
         {
-            await Logs.AddLog($"RemovePlaylistAsync called, playlist id: {playlist_id}");
+            await Logger.AddLog($"RemovePlaylistAsync called, playlist id: {playlist_id}");
             using LogScope log_scope = new LogScope();
 
             using var _context = _db_context_factory.CreateDbContext();
@@ -707,7 +721,7 @@ namespace CS_Discord_Bot
             saved_music = playlists;
             saved_music.Add(playback_history);
             saved_music.Add(popular_songs);
-            await Logs.AddLog("Saved music updated");
+            await Logger.AddLog("Saved music updated");
         }
         public async Task ToggleRepeatAsync()
         {
@@ -715,13 +729,13 @@ namespace CS_Discord_Bot
             {
                 KeyValuePair<IVoiceChannel, Song> song;
                 music_queue.TryDequeue(out song);
-                await Logs.AddLog("Repeat: off");
+                await Logger.AddLog("Repeat: off");
             }
             else
             {
                 if (current_song != null)
                     music_queue.Enqueue(current_song.Value);
-                await Logs.AddLog("Repeat: on");
+                await Logger.AddLog("Repeat: on");
             }
 
             this.on_repeat = !this.on_repeat;

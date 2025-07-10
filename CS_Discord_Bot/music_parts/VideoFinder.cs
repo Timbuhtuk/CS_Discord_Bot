@@ -1,4 +1,5 @@
-﻿using CS_Discord_Bot.Models;
+﻿using CS_Discord_Bot.Enums;
+using CS_Discord_Bot.Models;
 using SpotifyAPI.Web;
 using System.Diagnostics;
 using YoutubeExplode;
@@ -39,7 +40,7 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var video = await client.Videos.GetAsync(videoId);
                     watch.Stop();
-                    await Logs.AddLog($"get video info took {watch.Elapsed}");
+                    await Logger.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new Dictionary<string, string>();
                     result.Add(video.Url, video.Title);
@@ -48,7 +49,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -64,7 +65,7 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var videos = client.Playlists.GetVideosAsync(playlist_id);
                     watch.Stop();
-                    await Logs.AddLog($"get video info took {watch.Elapsed}");
+                    await Logger.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new Dictionary<string, string>();
                     foreach (var video in videos.ToListAsync().Result)
@@ -76,7 +77,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -100,7 +101,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -153,7 +154,7 @@ namespace CS_Discord_Bot
                     var video_id = VideoId.Parse(video_raw.Url);
                     var video = await client.Videos.GetAsync(video_id);
                     watch.Stop();
-                    await Logs.AddLog($"get video info took {watch.Elapsed}");
+                    await Logger.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new Dictionary<string, string>();
                     result.Add(video.Url, video.Title);
@@ -192,7 +193,7 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var video = await client.Videos.GetAsync(videoId);
                     watch.Stop();
-                    await Logs.AddLog($"get video info took {watch.Elapsed}");
+                    await Logger.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new List<Song>();
                     result.Add(new Song()
@@ -208,7 +209,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -224,7 +225,7 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var videos = client.Playlists.GetVideosAsync(playlist_id);
                     watch.Stop();
-                    await Logs.AddLog($"get video info took {watch.Elapsed}");
+                    await Logger.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new List<Song>();
                     foreach (var video in videos.ToListAsync().Result)
@@ -243,7 +244,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -267,7 +268,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -314,7 +315,7 @@ namespace CS_Discord_Bot
                     var video_id = VideoId.Parse(video_raw.Url);
                     var video = await client.Videos.GetAsync(video_id);
                     watch.Stop();
-                    await Logs.AddLog($"get video info took {watch.Elapsed}");
+                    await Logger.AddLog($"get video info took {watch.Elapsed}");
 
                     var result = new List<Song>();
                     result.Add(new Song()
@@ -342,7 +343,7 @@ namespace CS_Discord_Bot
         /// <returns>Dictionary&lt;Urls,Titles&gt; or null if no searching results</returns>
         public static async Task<Dictionary<string, string>?> FindPlaylistByLink(string query)
         {
-            await Logs.AddLog($"Find called for {query}");
+            await Logger.AddLog($"Find called for {query}");
             if (string.IsNullOrEmpty(query))
             {
                 return null;
@@ -359,7 +360,7 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var videos = client.Playlists.GetVideosAsync(playlist_id);
                     watch.Stop();
-                    await Logs.AddLog($"get playlist info took {watch.Elapsed}");
+                    await Logger.AddLog($"get playlist info took {watch.Elapsed}");
 
                     var result = new Dictionary<string, string>();
                     foreach (var video in videos.ToListAsync().Result)
@@ -371,7 +372,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -415,7 +416,7 @@ namespace CS_Discord_Bot
         /// <returns>Dictionary&lt;Urls,Titles&gt; or null if no searching results</returns>
         public static async Task<List<Song>?> FindPlaylistByLink(string query, bool return_song)
         {
-            await Logs.AddLog($"Find called for {query}");
+            await Logger.AddLog($"Find called for {query}");
             if (string.IsNullOrEmpty(query))
             {
                 return null;
@@ -432,7 +433,7 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var videos = client.Playlists.GetVideosAsync(playlist_id);
                     watch.Stop();
-                    await Logs.AddLog($"get playlist info took {watch.Elapsed}");
+                    await Logger.AddLog($"get playlist info took {watch.Elapsed}");
 
                     var result = new List<Song>();
                     foreach (var video in videos.ToListAsync().Result)
@@ -451,7 +452,7 @@ namespace CS_Discord_Bot
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }
@@ -508,13 +509,13 @@ namespace CS_Discord_Bot
                     watch.Start();
                     var playlist = await client.Playlists.GetAsync(playlist_id);
                     watch.Stop();
-                    await Logs.AddLog($"get playlist info took {watch.Elapsed}");
+                    await Logger.AddLog($"get playlist info took {watch.Elapsed}");
 
                     return playlist.Title;
                 }
                 catch (Exception ex)
                 {
-                    await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                    await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     return null;
                 }
             }

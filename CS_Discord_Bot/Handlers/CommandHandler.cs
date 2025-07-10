@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using CS_Discord_Bot.Enums;
+using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -23,9 +24,9 @@ namespace CS_Discord_Bot.Handlers
             _client.MessageReceived += HandleCommandAsync;
             var modules_info = await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _service_provider);
 
-            await Logs.AddLog($"Modules registered: {string.Join(", ", modules_info.Select(x => x.Name))}");
-            await Logs.AddLog($"With commands: {string.Join(", ", modules_info.Select(x => string.Join(", ", x.Commands.Select(y => y.Name))))}");
-            await Logs.AddLog("Command handler registered");
+            await Logger.AddLog($"Modules registered: {string.Join(", ", modules_info.Select(x => x.Name))}");
+            await Logger.AddLog($"With commands: {string.Join(", ", modules_info.Select(x => string.Join(", ", x.Commands.Select(y => y.Name))))}");
+            await Logger.AddLog("Command handler registered");
         }
 
         protected async Task HandleCommandAsync(SocketMessage messageParam)
@@ -41,7 +42,7 @@ namespace CS_Discord_Bot.Handlers
                 var result = await _commands.ExecuteAsync(context, argPos, _service_provider);
                 if (!result.IsSuccess)
                 {
-                    await Logs.AddLog(result.ErrorReason, LogLevel.ERROR);
+                    await Logger.AddLog(result.ErrorReason, LogLevel.ERROR);
                 }
                 await message.DeleteAsync();
             }

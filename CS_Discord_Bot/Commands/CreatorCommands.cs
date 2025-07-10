@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using CS_Discord_Bot.Enums;
+using Discord.Commands;
 using System.Diagnostics;
 
 namespace CS_Discord_Bot.Commands
@@ -40,7 +41,7 @@ namespace CS_Discord_Bot.Commands
                     }
                     catch (Exception ex)
                     {
-                        await Logs.AddLog(ex.Message, LogLevel.ERROR);
+                        await Logger.AddLog(ex.Message, LogLevel.ERROR);
                     }
                 }
             }
